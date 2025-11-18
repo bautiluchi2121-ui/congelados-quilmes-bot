@@ -1,48 +1,44 @@
-// aplicación.js
-// Bot de WhatsApp para Congelados Quilmes usando Twilio + Render
-
-const express = require('express');
-const bodyParser = require('body-parser');
-
+const express = require("express");
+const bodyParser = require("body-parser");
 const app = express();
-
-// Render asigna el puerto en la variable de entorno PORT
 const port = process.env.PORT || 10000;
 
-// Middleware para que Express pueda leer los datos que envía Twilio
+// Para que Express pueda leer los POST de Twilio
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
 
-// Ruta de prueba para ver que el servidor está vivo
-app.get('/', (req, res) => {
-  res.send('Bot de Congelados Quilmes activo ✅');
+// Ruta de prueba para ver si tu bot funciona
+app.get("/", (req, res) => {
+  res.send("Bot de Congelados Quilmes funcionando correctamente 🚚❄️");
 });
 
-// Ruta que Twilio va a llamar cuando llegue un WhatsApp
-// IMPORTANTE: esta ruta debe coincidir con /mensaje en Twilio
-app.post('/mensaje', (req, res) => {
-  const body = req.body.Body || '';   // Texto que envió la persona
-  const from = req.body.From || '';   // Número de WhatsApp del remitente
+// Ruta que Twilio va a llamar cuando llegue un mensaje
+app.post("/mensaje", (req, res) => {
+  const mensajeEntrante = req.body.Body || "";
+  console.log("📩 Mensaje recibido:", mensajeEntrante);
 
-  console.log('Mensaje recibido de:', from, '->', body);
+  let respuesta = "";
 
-  // Mensaje de respuesta que recibirá el cliente
-  const respuesta =
-    'Hola 👋, soy el bot de *Congelados Quilmes*.\n\n' +
-    'Recibí tu mensaje: "' + body + '".\n' +
-    'En breve Luciano te va a responder.';
+  // Respuestas del bot
+  if (mensajeEntrante.trim().toLowerCase() === "hola") {
+    respuesta =
+      "Hola Luciano 👋 Soy tu bot de Congelados Quilmes. ¿Qué necesitas?";
+  } else if (mensajeEntrante.toLowerCase().includes("lista")) {
+    respuesta =
+      "Acá tenés la lista ❄️👇\n\n🥩 Hamburguesas $3200\n🍗 Patys de pollo $3200\n🍟 Patynesas $3200\n\n¿Querés hacer un pedido?";
+  } else {
+    respuesta =
+      "No entiendo el mensaje 🤖. Escribí *hola* o *lista* para continuar.";
+  }
 
-  // Twilio necesita que respondamos en formato TwiML (XML)
-  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Message>${respuesta}</Message>
-</Response>`;
+  const twilio = require("twilio");
+  const twiml = new twilio.twiml.MessagingResponse();
+  twiml.message(respuesta);
 
-  res.set('Content-Type', 'text/xml');
-  res.status(200).send(twiml);
+  res.type("text/xml");
+  res.send(twiml.toString());
 });
 
-// Iniciar el servidor
+// Iniciar servidor
 app.listen(port, () => {
-  console.log(`Servidor de Congelados Quilmes escuchando en el puerto ${port}`);
+  console.log(`🚀 Servidor corriendo en el puerto ${port}`);
 });
