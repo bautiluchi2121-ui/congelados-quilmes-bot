@@ -1,55 +1,48 @@
-const express = require("express");
+// aplicación.js
+// Bot de WhatsApp para Congelados Quilmes usando Twilio + Render
+
+const express = require('express');
+const bodyParser = require('body-parser');
+
 const app = express();
 
-// Puerto que usa Render (si no hay PORT, usa 10000 para pruebas locales)
+// Render asigna el puerto en la variable de entorno PORT
 const port = process.env.PORT || 10000;
 
-// Para que Express pueda leer los datos que manda Twilio en el body (Body, From, etc.)
-app.use(express.urlencoded({ extended: true }));
+// Middleware para que Express pueda leer los datos que envía Twilio
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-// Ruta de prueba para el navegador
-app.get("/", (req, res) => {
-  res.send("Bot de Congelados Quilmes activo ✅");
+// Ruta de prueba para ver que el servidor está vivo
+app.get('/', (req, res) => {
+  res.send('Bot de Congelados Quilmes activo ✅');
 });
 
-// Ruta que Twilio va a llamar cuando llegue un mensaje de WhatsApp
-app.post("/mensaje", (req, res) => {
-  // Texto que escribió la persona en WhatsApp
-  const textoOriginal = (req.body.Body || "").trim();
-  const texto = textoOriginal.toLowerCase();
+// Ruta que Twilio va a llamar cuando llegue un WhatsApp
+// IMPORTANTE: esta ruta debe coincidir con /mensaje en Twilio
+app.post('/mensaje', (req, res) => {
+  const body = req.body.Body || '';   // Texto que envió la persona
+  const from = req.body.From || '';   // Número de WhatsApp del remitente
 
-  let respuesta;
+  console.log('Mensaje recibido de:', from, '->', body);
 
-  if (!texto) {
-    respuesta =
-      "Hola 👋, soy el bot de *Congelados Quilmes*.\nEscribime tu pedido o la palabra *MENU* para ver opciones.";
-  } else if (texto === "menu") {
-    respuesta =
-      "📋 *MENÚ CONGELADOS QUILMES*\n" +
-      "1️⃣ Lista de precios\n" +
-      "2️⃣ Hacer un pedido\n" +
-      "3️⃣ Hablar con un humano 👨‍🍳\n\n" +
-      "Escribí el número de opción.";
-  } else {
-    respuesta =
-      "✅ Recibí tu mensaje:\n\n\"" +
-      textoOriginal +
-      "\"\n\nEn breve lo revisamos. Gracias por escribir a *Congelados Quilmes* 🧊🍔";
-  }
+  // Mensaje de respuesta que recibirá el cliente
+  const respuesta =
+    'Hola 👋, soy el bot de *Congelados Quilmes*.\n\n' +
+    'Recibí tu mensaje: "' + body + '".\n' +
+    'En breve Luciano te va a responder.';
 
-  // TwiML (formato que Twilio necesita)
-  const twiml = `
-    <Response>
-      <Message>${respuesta}</Message>
-    </Response>
-  `;
+  // Twilio necesita que respondamos en formato TwiML (XML)
+  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Message>${respuesta}</Message>
+</Response>`;
 
-  // Responder a Twilio en formato XML
-  res.set("Content-Type", "text/xml");
-  res.send(twiml);
+  res.set('Content-Type', 'text/xml');
+  res.status(200).send(twiml);
 });
 
-// Iniciar servidor
+// Iniciar el servidor
 app.listen(port, () => {
   console.log(`Servidor de Congelados Quilmes escuchando en el puerto ${port}`);
 });
